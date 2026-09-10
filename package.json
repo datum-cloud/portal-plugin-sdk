@@ -1,0 +1,58 @@
+{
+  "name": "@datum-cloud/portal-plugin-sdk",
+  "version": "1.0.0",
+  "type": "module",
+  "license": "MIT",
+  "description": "Host-contract SDK for cloud-portal's Portal Plugin System: React hooks (useProjectContext, usePluginFetch, useResourceWatch) that give a plugin its project identity, its only data path (the portal's authenticated Milo control-plane proxy), and live resource updates.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datum-cloud/portal-plugin-sdk"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./host": {
+      "types": "./dist/host/index.d.ts",
+      "default": "./dist/host/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "LICENSE",
+    "README.md",
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown --config-loader native",
+    "dev": "tsdown --config-loader native --watch",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "rm -rf dist .turbo node_modules coverage"
+  },
+  "peerDependencies": {
+    "react": ">=19.0.0 <20"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "eslint": "^9.19.0",
+    "jsdom": "^29.1.1",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "tsdown": "^0.22.3",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.9"
+  },
+  "packageManager": "pnpm@11.8.0",
+  "publishConfig": {
+    "access": "public"
+  }
+}
