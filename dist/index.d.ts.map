@@ -1,0 +1,1 @@
+{"version":3,"file":"index.d.ts","names":[],"sources":["../src/hooks/use-project-context.ts","../src/hooks/use-plugin-fetch.ts","../src/hooks/use-resource-watch.ts","../src/version.ts"],"mappings":";;;;;;;iBAQgB,qBAAqB;;;;;;;;;;iBCErB,kBAAkB;;;;;;;;;iBCDlB,iBAAiB,aAC/B,SAAS,wBAAwB,KAChC,uBAAuB;;;;;;;;;;;;cCFb;cACA"}
