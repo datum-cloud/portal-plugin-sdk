@@ -1,46 +1,134 @@
 name: Release
 
-# Standard Changesets flow (config already exists at .changeset/config.json,
-# access: "public"): on every push to main, either open/update a "Version
-# Packages" PR if unreleased changesets are pending, or — once that PR is
-# merged (so there are no pending changesets left) — version + publish to
-# npm and tag the release. Requires the NPM_TOKEN secret below; nothing here
-# runs without it.
+# Changesets flow on every push to main:
+#   version  - pending changesets: open or update the "Version Packages" PR.
+#   pack     - the version in package.json is not on npm yet (the Version PR
+#              merged, or a version was bumped by hand): build, test and pack
+#              the tarball. No publish credentials.
+#   publish  - stage exactly that tarball on npm, and draft its GitHub Release.
+#
+# npm trusted publishing (OIDC) is the only npm credential: there is no token
+# anywhere, and setup-node has no registry auth URL. npm trusts this workflow
+# by repository and workflow FILENAME, so renaming or moving release.yml
+# silently breaks publishing. The trusted publisher is configured on npmjs.com
+# under the package's settings, with the "npm stage publish" permission: CI
+# can only stage a version, and a maintainer approves it with 2FA
+# (`npm stage approve <id>`, or on npmjs.com) before it goes public. Publish
+# the drafted GitHub Release once the version is live.
 on:
   push:
     branches: [main]
 
-concurrency: ${{ github.workflow }}-${{ github.ref }}
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  release:
+  version:
+    name: Open the Version Packages PR
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
-      id-token: write
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - uses: pnpm/action-setup@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: pnpm
-          registry-url: https://registry.npmjs.org
-
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build
-      - run: pnpm test
-
-      - name: Create release PR or publish
-        uses: changesets/action@v1
+      - uses: changesets/action@v1
         with:
-          publish: pnpm exec changeset publish
+          version: pnpm exec changeset version
+          title: "chore: version packages"
+          commit: "chore: version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  pack:
+    name: Build and pack
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      publish: ${{ steps.check.outputs.publish }}
+      name: ${{ steps.check.outputs.name }}
+      version: ${{ steps.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Is this version new to npm?
+        id: check
+        run: |
+          name=$(node -p "require('./package.json').name")
+          version=$(node -p "require('./package.json').version")
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if npm view "$name@$version" version >/dev/null 2>&1; then
+            echo "$name@$version is already on npm."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: pnpm/action-setup@v4
+        if: steps.check.outputs.publish == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.publish == 'true'
+        with:
+          node-version: 24
+          cache: pnpm
+      - if: steps.check.outputs.publish == 'true'
+        run: pnpm install --frozen-lockfile
+      - if: steps.check.outputs.publish == 'true'
+        run: pnpm typecheck
+      - if: steps.check.outputs.publish == 'true'
+        run: pnpm build
+      - if: steps.check.outputs.publish == 'true'
+        run: pnpm test
+      - name: Pack
+        if: steps.check.outputs.publish == 'true'
+        run: |
+          mkdir -p out
+          npm pack --pack-destination out
+          node scripts/release-notes.mjs "${{ steps.check.outputs.version }}" > out/release-notes.md
+      - uses: actions/upload-artifact@v4
+        if: steps.check.outputs.publish == 'true'
+        with:
+          name: package
+          path: out/
+          if-no-files-found: error
+
+  publish:
+    name: Stage on npm
+    runs-on: ubuntu-latest
+    needs: pack
+    if: needs.pack.outputs.publish == 'true'
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: package
+          path: out
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install -g npm@^12
+      - name: Stage the packed tarball
+        run: npm stage publish out/*.tgz --access public --provenance
+      - name: Draft the GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.pack.outputs.name }}@${{ needs.pack.outputs.version }}
+        run: |
+          gh release create "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "$TAG" \
+            --notes-file out/release-notes.md \
+            --draft
