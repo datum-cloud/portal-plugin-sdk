@@ -14,7 +14,9 @@ name: Release
 # under the package's settings, with the "npm stage publish" permission: CI
 # can only stage a version, and a maintainer approves it with 2FA
 # (`npm stage approve <id>`, or on npmjs.com) before it goes public. Publish
-# the drafted GitHub Release once the version is live.
+# the drafted GitHub Release once the version is live. npm does not list a
+# staged version until it is approved, so the draft Release marks a version as
+# staged: a push to main while it awaits approval does not stage it again.
 on:
   push:
     branches: [main]
@@ -91,10 +93,12 @@ jobs:
         run: pnpm test
       - name: Pack
         if: steps.check.outputs.publish == 'true'
+        env:
+          VERSION: ${{ steps.check.outputs.version }}
         run: |
           mkdir -p out
           npm pack --pack-destination out
-          node scripts/release-notes.mjs "${{ steps.check.outputs.version }}" > out/release-notes.md
+          node scripts/release-notes.mjs "$VERSION" > out/release-notes.md
       - uses: actions/upload-artifact@v4
         if: steps.check.outputs.publish == 'true'
         with:
@@ -110,21 +114,35 @@ jobs:
     permissions:
       contents: write
       id-token: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TAG: ${{ needs.pack.outputs.name }}@${{ needs.pack.outputs.version }}
     steps:
+      - name: Is this version already staged?
+        id: staged
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "$TAG already has a GitHub Release, so it was staged by an earlier run."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/download-artifact@v4
+        if: steps.staged.outputs.skip == 'false'
         with:
           name: package
           path: out
       - uses: actions/setup-node@v4
+        if: steps.staged.outputs.skip == 'false'
         with:
           node-version: 24
-      - run: npm install -g npm@^12
+      - if: steps.staged.outputs.skip == 'false'
+        run: npm install -g npm@^12
       - name: Stage the packed tarball
+        if: steps.staged.outputs.skip == 'false'
         run: npm stage publish out/*.tgz --access public --provenance
       - name: Draft the GitHub Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ needs.pack.outputs.name }}@${{ needs.pack.outputs.version }}
+        if: steps.staged.outputs.skip == 'false'
         run: |
           gh release create "$TAG" \
             --repo "$GITHUB_REPOSITORY" \
