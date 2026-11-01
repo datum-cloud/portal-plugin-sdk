@@ -41,7 +41,7 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 26
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - uses: changesets/action@v1
@@ -82,7 +82,7 @@ jobs:
       - uses: actions/setup-node@v4
         if: steps.check.outputs.publish == 'true'
         with:
-          node-version: 24
+          node-version: 26
           cache: pnpm
       - if: steps.check.outputs.publish == 'true'
         run: pnpm install --frozen-lockfile
@@ -136,7 +136,7 @@ jobs:
       - uses: actions/setup-node@v4
         if: steps.staged.outputs.skip == 'false'
         with:
-          node-version: 24
+          node-version: 26
       - if: steps.staged.outputs.skip == 'false'
         run: npm install -g npm@^12
       - name: Stage the packed tarball
