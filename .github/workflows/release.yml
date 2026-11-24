@@ -141,7 +141,9 @@ jobs:
         run: npm install -g npm@^12
       - name: Stage the packed tarball
         if: steps.staged.outputs.skip == 'false'
-        run: npm stage publish out/*.tgz --access public --provenance
+        # The ./ matters: npm reads a bare "out/x.tgz" as a GitHub user/repo
+        # shorthand and refuses it (EALLOWGIT), not as a local file.
+        run: npm stage publish ./out/*.tgz --access public --provenance
       - name: Draft the GitHub Release
         if: steps.staged.outputs.skip == 'false'
         run: |
