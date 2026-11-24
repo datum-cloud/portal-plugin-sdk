@@ -8,4 +8,4 @@
  * constant is that source of truth on the SDK side.
  */
 export const SDK_NAME = '@datum-cloud/portal-plugin-sdk';
-export const SDK_VERSION = '1.0.0';
+export const SDK_VERSION = '1.1.0';

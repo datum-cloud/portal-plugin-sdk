@@ -16,8 +16,19 @@ export type {
   PluginWatchEvent,
   UseResourceWatchOptions,
   UseResourceWatchResult,
+  PluginQuotaScope,
+  UseResourceQuotaOptions,
+  ResourceQuotaVerdict,
+  QuotaIncreaseRequest,
+  RequestQuotaIncrease,
 } from './types';
 
-export { useProjectContext, usePluginFetch, useResourceWatch } from './hooks';
+export {
+  useProjectContext,
+  usePluginFetch,
+  useResourceWatch,
+  useResourceQuota,
+  useRequestQuotaIncrease,
+} from './hooks';
 
 export { SDK_NAME, SDK_VERSION } from './version';

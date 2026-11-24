@@ -48,6 +48,35 @@ function useResourceWatch(options) {
 	return useHostBindings("useResourceWatch").useResourceWatch(options);
 }
 //#endregion
+//#region src/hooks/use-resource-quota.ts
+/**
+* Whether the current project (or its organization) has quota left for a
+* resource, so a plugin can disable a create action before the API refuses
+* it. Stays live: the verdict updates when the allowance bucket changes.
+*
+* The verdict fails open (`isUnknown: true, denied: false`) when the host
+* can't read the quota. For resources that default to zero, such as public
+* IPv4, gate on `denied || isUnknown` instead of `denied` alone.
+*
+* Requires SDK 1.1.0 — declare `sdk.range: "^1.1.0"` in the plugin manifest.
+*/
+function useResourceQuota(options) {
+	return useHostBindings("useResourceQuota").useResourceQuota(options);
+}
+//#endregion
+//#region src/hooks/use-request-quota-increase.ts
+/**
+* Returns an action that opens the portal's quota increase request (the
+* same prefilled support message portal pages open), for a resource type
+* and scope. Pair it with `useResourceQuota` to offer "Request more" when
+* the quota is used up.
+*
+* Requires SDK 1.1.0 — declare `sdk.range: "^1.1.0"` in the plugin manifest.
+*/
+function useRequestQuotaIncrease() {
+	return useHostBindings("useRequestQuotaIncrease").useRequestQuotaIncrease();
+}
+//#endregion
 //#region src/version.ts
 /**
 * Identity the host and a plugin's manifest both refer to. `SDK_VERSION`
@@ -59,8 +88,8 @@ function useResourceWatch(options) {
 * constant is that source of truth on the SDK side.
 */
 const SDK_NAME = "@datum-cloud/portal-plugin-sdk";
-const SDK_VERSION = "1.0.0";
+const SDK_VERSION = "1.1.0";
 //#endregion
-export { SDK_NAME, SDK_VERSION, usePluginFetch, useProjectContext, useResourceWatch };
+export { SDK_NAME, SDK_VERSION, usePluginFetch, useProjectContext, useRequestQuotaIncrease, useResourceQuota, useResourceWatch };
 
 //# sourceMappingURL=index.js.map
