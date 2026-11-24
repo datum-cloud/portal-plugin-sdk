@@ -58,6 +58,52 @@ interface UseResourceWatchResult<T = unknown> {
   isConnected: boolean;
   error: Error | null;
 }
+/** Whose quota to read: the current project's, or its organization's. */
+type PluginQuotaScope = 'organization' | 'project';
+interface UseResourceQuotaOptions {
+  /**
+   * The quota resource type as registered with the quota system, e.g.
+   * `ipam.miloapis.com/public-ipv4claims`. This is the quota system's
+   * identifier, not a `useResourceWatch` group/version/resource path.
+   */
+  resourceType: string;
+  scope: PluginQuotaScope;
+}
+/**
+ * The host's verdict on one quota for the current project or organization.
+ * Same meaning and copy as the portal's own quota-gated pages.
+ *
+ * The verdict fails open: a missing or unreadable allowance bucket reads as
+ * `isUnknown: true, denied: false`, because for most resources the API's 403
+ * is the real gate. For a resource that defaults to zero (e.g. public IPv4),
+ * treat `isUnknown` as "not allowed" yourself — the SDK doesn't choose.
+ */
+interface ResourceQuotaVerdict {
+  /** True until the host has read the quota. Never pair with `denied`. */
+  isLoading: boolean;
+  /** The host couldn't tell (no bucket, read failed, or not a counted resource). */
+  isUnknown: boolean;
+  /** Definitive "used up": never true while loading or unknown. */
+  denied: boolean;
+  /** Human-readable reason, set only when `denied`. */
+  deniedReason?: string;
+  /** Set only when the quota is known. */
+  limit?: number;
+  allocated?: number;
+  available?: number;
+}
+interface QuotaIncreaseRequest {
+  /** Same identifier as `UseResourceQuotaOptions.resourceType`. */
+  resourceType: string;
+  scope: PluginQuotaScope;
+  /**
+   * Optional extra context added to the prefilled request, e.g.
+   * "Public IPv4 for a network load balancer."
+   */
+  context?: string;
+}
+/** Opens the portal's quota increase request, prefilled for one quota. */
+type RequestQuotaIncrease = (request: QuotaIncreaseRequest) => void;
 /**
  * The real implementations the host supplies behind the plugin-facing hooks.
  * Never imported by a plugin — only by cloud-portal, via `./host`. Shaped as
@@ -68,7 +114,11 @@ interface PortalPluginHostBindings {
   useProjectContext(): PluginProjectContextValue;
   usePluginFetch(): PluginFetch;
   useResourceWatch<T = unknown>(options: UseResourceWatchOptions<T>): UseResourceWatchResult<T>;
+  /** @since 1.1.0 — must stay live: re-render when the allowance bucket changes. */
+  useResourceQuota(options: UseResourceQuotaOptions): ResourceQuotaVerdict;
+  /** @since 1.1.0 */
+  useRequestQuotaIncrease(): RequestQuotaIncrease;
 }
 //#endregion
-export { PluginWatchEvent as a, UseResourceWatchOptions as c, PluginProjectContextValue as i, UseResourceWatchResult as l, PluginOrganization as n, PluginWatchEventType as o, PluginProject as r, PortalPluginHostBindings as s, PluginFetch as t };
-//# sourceMappingURL=types-CvoOm66Q.d.ts.map
+export { PluginQuotaScope as a, PortalPluginHostBindings as c, ResourceQuotaVerdict as d, UseResourceQuotaOptions as f, PluginProjectContextValue as i, QuotaIncreaseRequest as l, UseResourceWatchResult as m, PluginOrganization as n, PluginWatchEvent as o, UseResourceWatchOptions as p, PluginProject as r, PluginWatchEventType as s, PluginFetch as t, RequestQuotaIncrease as u };
+//# sourceMappingURL=types-DUi47Z6F.d.ts.map

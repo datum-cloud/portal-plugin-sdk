@@ -2,7 +2,7 @@
 
 The host-contract package for cloud-portal's [Portal Plugin
 System](https://github.com/datum-cloud/cloud-portal/blob/main/docs/enhancements/portal-plugin-system.md).
-A service team's plugin imports this package to reach the three things the
+A service team's plugin imports this package to reach what the
 host provides — never a plugin-declared backend, and never a hand-rolled
 stand-in.
 
@@ -24,6 +24,51 @@ function InstanceList() {
 }
 ```
 
+## Quota-gated actions (SDK 1.1.0+)
+
+`useResourceQuota` gives the same verdict the portal's own pages use, so a
+plugin can disable a create action before the API refuses it.
+`useRequestQuotaIncrease` opens the portal's prefilled quota increase request.
+
+```tsx
+import { useRequestQuotaIncrease, useResourceQuota } from '@datum-cloud/portal-plugin-sdk';
+
+const IPV4 = 'ipam.miloapis.com/public-ipv4claims';
+
+function AddIPv4Button({ onAdd }: { onAdd: () => void }) {
+  const quota = useResourceQuota({ resourceType: IPV4, scope: 'project' });
+  const requestIncrease = useRequestQuotaIncrease();
+
+  if (quota.isLoading) return <button disabled>Add IPv4 address</button>;
+
+  // Public IPv4 defaults to 0, so "unknown" means "not allowed" here.
+  if (quota.denied || quota.isUnknown) {
+    return (
+      <button
+        onClick={() =>
+          requestIncrease({
+            resourceType: IPV4,
+            scope: 'project',
+            context: 'Public IPv4 for a network load balancer.',
+          })
+        }
+      >
+        Request IPv4 address
+      </button>
+    );
+  }
+  return <button onClick={onAdd}>Add IPv4 address</button>;
+}
+```
+
+The verdict **fails open**: when the host can't read the quota it returns
+`isUnknown: true, denied: false`, because for most resources the API's 403 is
+the real gate. Gate on `denied` alone for those, and on `denied || isUnknown`
+for resources that default to zero. The API remains the final check either
+way.
+
+A plugin that calls these hooks must declare `sdk.range: "^1.1.0"`.
+
 ## Why a singleton, not a normal npm dependency
 
 Plugins are loaded via Module Federation, in the host's own JavaScript realm.
@@ -37,11 +82,12 @@ instance at runtime regardless of what version it was built against.
 ## Two entry points, two audiences
 
 - `@datum-cloud/portal-plugin-sdk` — the plugin-facing surface: `useProjectContext`,
-  `usePluginFetch`, `useResourceWatch`, and their result types. This is the
+  `usePluginFetch`, `useResourceWatch`, `useResourceQuota`,
+  `useRequestQuotaIncrease`, and their result types. This is the
   package a plugin repository actually calls.
 - `@datum-cloud/portal-plugin-sdk/host` — host-only wiring
   (`PortalPluginHostProvider`), imported by cloud-portal to supply the real
-  implementations behind those three hooks. A plugin should never import this.
+  implementations behind those hooks. A plugin should never import this.
 
 ## Versioning
 

@@ -1,4 +1,4 @@
-import { s as PortalPluginHostBindings } from "../types-CvoOm66Q.js";
+import { c as PortalPluginHostBindings } from "../types-DUi47Z6F.js";
 import { ReactElement, ReactNode } from "react";
 //#region src/host/index.d.ts
 declare function PortalPluginHostProvider({ bindings, children }: {

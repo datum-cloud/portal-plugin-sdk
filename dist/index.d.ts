@@ -1,4 +1,4 @@
-import { a as PluginWatchEvent, c as UseResourceWatchOptions, i as PluginProjectContextValue, l as UseResourceWatchResult, n as PluginOrganization, o as PluginWatchEventType, r as PluginProject, t as PluginFetch } from "./types-CvoOm66Q.js";
+import { a as PluginQuotaScope, d as ResourceQuotaVerdict, f as UseResourceQuotaOptions, i as PluginProjectContextValue, l as QuotaIncreaseRequest, m as UseResourceWatchResult, n as PluginOrganization, o as PluginWatchEvent, p as UseResourceWatchOptions, r as PluginProject, s as PluginWatchEventType, t as PluginFetch, u as RequestQuotaIncrease } from "./types-DUi47Z6F.js";
 //#region src/hooks/use-project-context.d.ts
 /**
  * The current project and organization the plugin is mounted under. Backed
@@ -26,6 +26,31 @@ declare function usePluginFetch(): PluginFetch;
  */
 declare function useResourceWatch<T = unknown>(options: UseResourceWatchOptions<T>): UseResourceWatchResult<T>;
 //#endregion
+//#region src/hooks/use-resource-quota.d.ts
+/**
+ * Whether the current project (or its organization) has quota left for a
+ * resource, so a plugin can disable a create action before the API refuses
+ * it. Stays live: the verdict updates when the allowance bucket changes.
+ *
+ * The verdict fails open (`isUnknown: true, denied: false`) when the host
+ * can't read the quota. For resources that default to zero, such as public
+ * IPv4, gate on `denied || isUnknown` instead of `denied` alone.
+ *
+ * Requires SDK 1.1.0 — declare `sdk.range: "^1.1.0"` in the plugin manifest.
+ */
+declare function useResourceQuota(options: UseResourceQuotaOptions): ResourceQuotaVerdict;
+//#endregion
+//#region src/hooks/use-request-quota-increase.d.ts
+/**
+ * Returns an action that opens the portal's quota increase request (the
+ * same prefilled support message portal pages open), for a resource type
+ * and scope. Pair it with `useResourceQuota` to offer "Request more" when
+ * the quota is used up.
+ *
+ * Requires SDK 1.1.0 — declare `sdk.range: "^1.1.0"` in the plugin manifest.
+ */
+declare function useRequestQuotaIncrease(): RequestQuotaIncrease;
+//#endregion
 //#region src/version.d.ts
 /**
  * Identity the host and a plugin's manifest both refer to. `SDK_VERSION`
@@ -37,7 +62,7 @@ declare function useResourceWatch<T = unknown>(options: UseResourceWatchOptions<
  * constant is that source of truth on the SDK side.
  */
 declare const SDK_NAME = "@datum-cloud/portal-plugin-sdk";
-declare const SDK_VERSION = "1.0.0";
+declare const SDK_VERSION = "1.1.0";
 //#endregion
-export { type PluginFetch, type PluginOrganization, type PluginProject, type PluginProjectContextValue, type PluginWatchEvent, type PluginWatchEventType, SDK_NAME, SDK_VERSION, type UseResourceWatchOptions, type UseResourceWatchResult, usePluginFetch, useProjectContext, useResourceWatch };
+export { type PluginFetch, type PluginOrganization, type PluginProject, type PluginProjectContextValue, type PluginQuotaScope, type PluginWatchEvent, type PluginWatchEventType, type QuotaIncreaseRequest, type RequestQuotaIncrease, type ResourceQuotaVerdict, SDK_NAME, SDK_VERSION, type UseResourceQuotaOptions, type UseResourceWatchOptions, type UseResourceWatchResult, usePluginFetch, useProjectContext, useRequestQuotaIncrease, useResourceQuota, useResourceWatch };
 //# sourceMappingURL=index.d.ts.map
