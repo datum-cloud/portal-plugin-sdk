@@ -1,6 +1,6 @@
 {
   "name": "@datum-cloud/portal-plugin-sdk",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "license": "MIT",
   "description": "Host-contract SDK for cloud-portal's Portal Plugin System: React hooks (useProjectContext, usePluginFetch, useResourceWatch) that give a plugin its project identity, its only data path (the portal's authenticated Milo control-plane proxy), and live resource updates.",
