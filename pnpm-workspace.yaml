@@ -1,3 +1,18 @@
+# pnpm settings for this repo. It is a single package, not a workspace: there
+# is no `packages:` list.
+
+# Wait a day before installing a newly published version. Most compromised
+# releases are pulled within hours. Our own packages are published and
+# consumed across repos on the same day, so the delay must not hold them back.
+minimumReleaseAge: 1440
+minimumReleaseAgeExclude:
+  - '@datum-cloud/*'
+
+# Reject a version published with weaker provenance than the versions before
+# it, such as a release pushed with a stolen token for a package that normally
+# publishes from CI.
+trustPolicy: no-downgrade
+
 overrides:
   "vite@>=8.2.0 <8.2.4": "8.2.4"
   "undici@<7.30.1": "7.30.1"
